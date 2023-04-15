@@ -1,0 +1,13 @@
+".\Objects\main.obj",
+".\Objects\Common.obj",
+".\Objects\Delay.obj",
+".\Objects\soft_delay.obj",
+".\Objects\LCD_2_Wire.obj",
+".\Objects\PCF8574.obj",
+".\Objects\SW_I2C.obj",
+".\Objects\MAX31855.obj",
+".\Objects\lcd_print.obj",
+".\Objects\STARTUP.obj" 
+TO ".\Objects\thermo" 
+PRINT(".\Listings\thermo.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 

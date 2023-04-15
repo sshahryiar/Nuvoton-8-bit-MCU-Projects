@@ -1,0 +1,105 @@
+C51 COMPILER V9.59.0.0   DHT12                                                             04/20/2020 20:42:42 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE DHT12
+OBJECT MODULE PLACED IN .\Objects\DHT12.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE My_Libraries\DHT12\DHT12.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\Include;.\M
+                    -y_Libraries\Software Delay;.\My_Libraries\I2C;.\My_Libraries\DHT12;.\My_Libraries\3 Wire LCD) DEFINE(FOSC_160000) DEBUG 
+                    -OBJECTEXTEND PRINT(.\Listings\DHT12.lst) TABS(2) OBJECT(.\Objects\DHT12.obj)
+
+line level    source
+
+   1          #include "N76E003.h"
+   2          #include "SFR_Macro.h"
+   3          #include "Function_define.h"
+   4          #include "Common.h"
+   5          #include "Delay.h"
+   6          #include "soft_delay.h"
+   7          #include "DHT12.h"
+   8          #include "I2C.h"
+   9          
+  10          
+  11          void DHT12_init(void)
+  12          {
+  13   1        I2C_init();
+  14   1          delay_ms(100);
+  15   1      }
+  16          
+  17          
+  18          unsigned char DHT12_CRC(unsigned char *array_values)
+  19          {
+  20   1        signed char i = 0x03;
+  21   1        unsigned char crc_result = 0x00;
+  22   1      
+  23   1        while(i > -1)
+  24   1        {
+  25   2          crc_result += array_values[i];
+  26   2          i--;
+  27   2        }
+  28   1      
+  29   1        return crc_result;
+  30   1      }
+  31          
+  32          
+  33          
+  34          unsigned char DHT12_read_byte(unsigned char address)
+  35          {
+  36   1        unsigned char value = 0x00;
+  37   1      
+  38   1        I2C_start();
+  39   1        I2C_write(DHT12_I2C_address);
+  40   1        I2C_write(address);
+  41   1      
+  42   1        I2C_start();
+  43   1        I2C_write(DHT12_I2C_address | I2C_R);
+  44   1        value = I2C_read(I2C_NACK);
+  45   1        I2C_stop();
+  46   1        
+  47   1        return value;
+  48   1      }
+  49          
+  50          
+  51          
+  52          unsigned char DHT12_get_data(float *DHT12_RH, float *DHT12_T)
+  53          {
+C51 COMPILER V9.59.0.0   DHT12                                                             04/20/2020 20:42:42 PAGE 2   
+
+  54   1        signed char i = no_of_bytes_to_read;
+  55   1      
+  56   1        unsigned char values[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
+  57   1      
+  58   1        while(i > 0x00)
+  59   1        {
+  60   2          values[(no_of_bytes_to_read - i)] = DHT12_read_byte((no_of_bytes_to_read - i));
+  61   2          i--;
+  62   2        };
+  63   1      
+  64   1        if(values[0x04] == DHT12_CRC(values))
+  65   1        {
+  66   2          *DHT12_RH = (((float)values[0x00]) + (((float)values[0x01]) * 0.1));
+  67   2          *DHT12_T = (((float)values[0x02]) + (((float)values[0x03]) * 0.1));
+  68   2      
+  69   2          return no_error;
+  70   2        }
+  71   1      
+  72   1        else
+  73   1        {
+  74   2          return CRC_error;
+  75   2        }
+  76   1      }
+  77          
+  78          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    290    ----
+   CONSTANT SIZE    =      5    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      17
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

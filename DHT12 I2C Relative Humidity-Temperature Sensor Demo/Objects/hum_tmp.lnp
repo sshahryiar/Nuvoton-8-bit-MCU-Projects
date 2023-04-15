@@ -1,0 +1,12 @@
+".\Objects\main.obj",
+".\Objects\Common.obj",
+".\Objects\Delay.obj",
+".\Objects\LCD_3_Wire.obj",
+".\Objects\soft_delay.obj",
+".\Objects\I2C.obj",
+".\Objects\DHT12.obj",
+".\Objects\lcd_print.obj",
+".\Objects\STARTUP.obj" 
+TO ".\Objects\hum_tmp" 
+PRINT(".\Listings\hum_tmp.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 

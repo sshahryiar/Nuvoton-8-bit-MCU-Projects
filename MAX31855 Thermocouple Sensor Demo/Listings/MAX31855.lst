@@ -1,0 +1,149 @@
+C51 COMPILER V9.59.0.0   MAX31855                                                          05/15/2020 11:07:08 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE MAX31855
+OBJECT MODULE PLACED IN .\Objects\MAX31855.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE My_Libraries\MAX31855\MAX31855.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.
+                    -\Include;.\My_Libraries\Software Delay;.\My_Libraries\2 Wire LCD;.\Common;.\My_Libraries\MAX31855;.\My_Libraries\LCD Pri
+                    -nt) DEFINE(FOSC_160000) DEBUG OBJECTEXTEND PRINT(.\Listings\MAX31855.lst) TABS(2) OBJECT(.\Objects\MAX31855.obj)
+
+line level    source
+
+   1          #include "N76E003.h"
+   2          #include "SFR_Macro.h"
+   3          #include "Function_define.h"
+   4          #include "Common.h"
+   5          #include "Delay.h"
+   6          #include "soft_delay.h"
+   7          #include "MAX31855.h"
+   8          
+   9          
+  10          void SPI_HW_Init(unsigned char clk_value)
+  11          {
+  12   1        switch(clk_value)
+  13   1        {
+  14   2          case 1:
+  15   2          {
+  16   3            clr_SPR1;
+  17   3            set_SPR0;
+  18   3            break;
+  19   3          }
+  20   2          case 2:
+  21   2          {
+  22   3            set_SPR1;
+  23   3            clr_SPR0;
+  24   3            break;
+  25   3          }
+  26   2          case 3:
+  27   2          {
+  28   3            set_SPR1;
+  29   3            set_SPR0;
+  30   3            break;
+  31   3          }
+  32   2          default:
+  33   2          {
+  34   3            clr_SPR1;
+  35   3            clr_SPR0;
+  36   3            break;
+  37   3          }
+  38   2        }   
+  39   1      
+  40   1        set_DISMODF;
+  41   1        set_MSTR;
+  42   1        clr_CPOL;
+  43   1        clr_CPHA;
+  44   1        set_SPIEN;
+  45   1      }
+  46          
+  47          
+  48          unsigned char SPI_transfer(unsigned char tx_data)
+  49          {
+  50   1        unsigned char rx_data = 0x00;
+  51   1        
+  52   1        SPDR = tx_data;
+  53   1        while(!(SPSR & 0x80));  
+C51 COMPILER V9.59.0.0   MAX31855                                                          05/15/2020 11:07:08 PAGE 2   
+
+  54   1        rx_data = SPDR;
+  55   1        clr_SPIF;  
+  56   1      
+  57   1        return rx_data;
+  58   1      }
+  59          
+  60          
+  61          void MAX31855_init(void)
+  62          {
+  63   1        P11_PushPull_Mode;
+  64   1        SPI_HW_Init(0);
+  65   1        delay_ms(100);
+  66   1      }
+  67          
+  68          
+  69          unsigned long MAX31855_read(void)
+  70          {
+  71   1        signed char i = 0x04;
+  72   1        unsigned long value = 0x00000000;
+  73   1      
+  74   1        MAX31855_SS_pin_LOW;
+  75   1      
+  76   1        while(i > 0)
+  77   1        {
+  78   2          value <<= 0x08;
+  79   2          value |= SPI_transfer(0x00);    
+  80   2          i--;
+  81   2        };
+  82   1      
+  83   1        MAX31855_SS_pin_HIGH;
+  84   1      
+  85   1        return value;
+  86   1      }
+  87          
+  88          
+  89          unsigned char MAX31855_get_data(float *T_r, float *T_amb)
+  90          {
+  91   1        unsigned long tmp = 0x00000000;
+  92   1        unsigned long value = 0x00000000;
+  93   1        float t = 0.0;
+  94   1      
+  95   1        value = MAX31855_read();
+  96   1      
+  97   1        tmp = (value & 0x7FFC0000);
+  98   1        tmp >>= 18; 
+  99   1        t = ((float)((float)tmp) * 0.25);
+ 100   1        
+ 101   1        if((value & 0x80000000) != 0x00000000)
+ 102   1        {
+ 103   2          t = -t;
+ 104   2        }
+ 105   1        
+ 106   1        *T_r = t;   
+ 107   1      
+ 108   1        tmp = (value & 0x0000FFF0);
+ 109   1        tmp >>= 4;
+ 110   1        t = ((float)((float)tmp) * 0.0625);
+ 111   1        
+ 112   1        if((value & 0x00008000) != 0x00000000)
+ 113   1        {
+ 114   2          t = -t;
+ 115   2        }
+C51 COMPILER V9.59.0.0   MAX31855                                                          05/15/2020 11:07:08 PAGE 3   
+
+ 116   1        
+ 117   1        *T_amb = t;
+ 118   1      
+ 119   1        return ((unsigned char)(value & 0x00000007));
+ 120   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    586    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      23
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
