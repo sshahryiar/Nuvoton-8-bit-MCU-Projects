@@ -1,0 +1,866 @@
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE EXTENDED_FUNCTIONS
+OBJECT MODULE PLACED IN .\Objects\Extended_Functions.obj
+COMPILER INVOKED BY: d:\Keil_v5\C51\BIN\C51.EXE ..\My_Libraries\Extended Functions\Extended_Functions.c OPTIMIZE(8,SPEED
+                    -) BROWSE INCDIR(..\Include;..\My_Libraries\2 Wire LCD  (Software Delay);..\My_Libraries\Software Delay;..\My_Libraries\E
+                    -xtended Functions) DEFINE(FOSC_160000) DEBUG OBJECTEXTEND PRINT(.\Listings\Extended_Functions.lst) TABS(2) OBJECT(.\Obje
+                    -cts\Extended_Functions.obj)
+
+line level    source
+
+   1          #include "N76E003.h"
+   2          #include "Common.h"
+   3          #include "Delay.h"
+   4          #include "SFR_Macro.h"
+   5          #include "Function_define.h"
+   6          #include "Extended_Functions.h"
+   7          
+   8          
+   9          static unsigned char EA_Save_bit;
+  10          
+  11          
+  12          void delay_us(unsigned int value)
+  13          {
+  14   1        value = (value / osc_scalar);
+  15   1        
+  16   1        while(value > 0x00)
+  17   1        {
+  18   2          ;//_asm("nop");
+  19   2          value--;
+  20   2        };
+  21   1      }
+  22          
+  23          
+  24          void delay_ms(unsigned int value)
+  25          { 
+  26   1        while(value > 0x00)
+  27   1        {
+  28   2          --value;
+  29   2          delay_us(1000);
+  30   2        };
+  31   1      }
+  32          
+  33          
+  34          void set_clock_source(unsigned char clock_source)
+  35          {
+  36   1        switch(clock_source)
+  37   1        {
+  38   2          case LIRC:
+  39   2          {
+  40   3            set_OSC1;                     
+  41   3            clr_OSC0;  
+  42   3            
+  43   3            break;
+  44   3          }
+  45   2          
+  46   2          case ECLK:
+  47   2          {
+  48   3            set_EXTEN1;
+  49   3            set_EXTEN0;
+  50   3            
+  51   3            while((CKSWT & SET_BIT3) == FALSE); 
+  52   3            
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 2   
+
+  53   3            clr_OSC1;                     
+  54   3            set_OSC0; 
+  55   3            
+  56   3            break;
+  57   3          }
+  58   2          
+  59   2          default:
+  60   2          {
+  61   3            set_HIRCEN;         
+  62   3            
+  63   3            while((CKSWT & SET_BIT5) == FALSE);   
+  64   3            
+  65   3            clr_OSC1;                       
+  66   3            clr_OSC0;
+  67   3            
+  68   3            break;
+  69   3          }
+  70   2        }
+  71   1      
+  72   1        while((CKEN & SET_BIT0) == TRUE);  
+  73   1      }
+  74          
+  75          
+  76          void disable_clock_source(unsigned char clock_source)
+  77          {
+  78   1        switch(clock_source)
+  79   1        {
+  80   2          case HIRC:
+  81   2          {
+  82   3              clr_HIRCEN;
+  83   3              break;
+  84   3          }
+  85   2          
+  86   2          case ECLK:
+  87   2          {
+  88   3              clr_EXTEN1;
+  89   3              clr_EXTEN0;
+  90   3              break;
+  91   3          }
+  92   2      
+  93   2          default:
+  94   2          {
+  95   3              break;
+  96   3          }
+  97   2        }
+  98   1      }
+  99          
+ 100          
+ 101          void set_clock_division_factor(unsigned char value)
+ 102          {
+ 103   1        CKDIV = value;
+ 104   1      }
+ 105          
+ 106          
+ 107          void set_system_clock_frequency(unsigned long F_osc, unsigned long F_sys)
+ 108          {
+ 109   1        F_osc = (F_osc / (0x02 * F_sys));
+ 110   1      
+ 111   1        if((F_osc >= 0x00) && (F_osc <= 0xFF))
+ 112   1        {
+ 113   2          CKDIV = ((unsigned char)F_osc); 
+ 114   2        }
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 3   
+
+ 115   1      }
+ 116          
+ 117          
+ 118          void setup_clock(unsigned long F_osc, unsigned long F_sys, unsigned char clock_source, unsigned char clock
+             -_source_to_disable)
+ 119          {
+ 120   1        set_clock_source(clock_source); 
+ 121   1        disable_clock_source(clock_source_to_disable);
+ 122   1        set_system_clock_frequency(F_osc, F_sys);
+ 123   1      }
+ 124          
+ 125          
+ 126          void set_Timer_0_for_Mode_0(unsigned int value)
+ 127          {
+ 128   1        TL0 = (value & 0x1F);
+ 129   1        TH0 = ((value & 0xFFE0) >> 0x05);
+ 130   1      }
+ 131          
+ 132          
+ 133          unsigned int get_Timer_0_for_Mode_0(void)
+ 134          {
+ 135   1        unsigned char hb = 0x00;
+ 136   1        unsigned char lb = 0x00;
+ 137   1        register unsigned int value = 0x0000;
+ 138   1        
+ 139   1        
+ 140   1        value = TH0;
+ 141   1        value <<= 0x08;
+ 142   1        value |= TL0;
+ 143   1        
+ 144   1        lb = (value & 0x001F);
+ 145   1        hb = ((value & 0xFFE0) >> 0x05);
+ 146   1        
+ 147   1        value = hb;
+ 148   1        value <<= 0x08;
+ 149   1        value |= lb;  
+ 150   1      
+ 151   1        return value; 
+ 152   1      }
+ 153          
+ 154          
+ 155          void set_Timer_0_for_Mode_1(unsigned int value)
+ 156          {
+ 157   1        TL0 = (value & 0x00FF);
+ 158   1        TH0 = ((value & 0xFF00) >> 0x08);
+ 159   1      }
+ 160          
+ 161          
+ 162          unsigned int get_Timer_0_for_Mode_1(void)
+ 163          {
+ 164   1        register unsigned int value = 0x0000;
+ 165   1        
+ 166   1        value = TH0;
+ 167   1        value <<= 0x08;
+ 168   1        value |= TL0;
+ 169   1      
+ 170   1        return value; 
+ 171   1      }
+ 172          
+ 173          
+ 174          void set_Timer_1_for_Mode_0(unsigned int value)
+ 175          {
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 4   
+
+ 176   1        TL1 = (value & 0x1F);
+ 177   1        TH1 = ((value & 0xFFE0) >> 0x05);
+ 178   1      }
+ 179          
+ 180          
+ 181          unsigned int get_Timer_1_for_Mode_0(void)
+ 182          {
+ 183   1        unsigned char hb = 0x00;
+ 184   1        unsigned char lb = 0x00;
+ 185   1        register unsigned int value = 0x0000;
+ 186   1        
+ 187   1        
+ 188   1        value = TH1;
+ 189   1        value <<= 0x08;
+ 190   1        value |= TL1;
+ 191   1        
+ 192   1        lb = (value & 0x001F);
+ 193   1        hb = ((value & 0xFFE0) >> 0x05);
+ 194   1        
+ 195   1        value = hb;
+ 196   1        value <<= 0x08;
+ 197   1        value |= lb;  
+ 198   1      
+ 199   1        return value; 
+ 200   1      }
+ 201          
+ 202          
+ 203          void set_Timer_1_for_Mode_1(unsigned int value)
+ 204          {
+ 205   1        TL1 = (value & 0x00FF);
+ 206   1        TH1 = ((value & 0xFF00) >> 0x08);
+ 207   1      }
+ 208          
+ 209          
+ 210          unsigned int get_Timer_1_for_Mode_1(void)
+ 211          {
+ 212   1        register unsigned int value = 0x0000;
+ 213   1        
+ 214   1        value = TH1;
+ 215   1        value <<= 0x08;
+ 216   1        value |= TL1;
+ 217   1      
+ 218   1        return value; 
+ 219   1      }
+ 220          
+ 221          
+ 222          void set_Timer_2(unsigned int value)
+ 223          {
+ 224   1        TL2 = (value & 0x00FF);
+ 225   1        TH2 = ((value & 0xFF00) >> 0x08);
+ 226   1      }
+ 227          
+ 228          
+ 229          unsigned int get_Timer_2(void)
+ 230          {
+ 231   1        register unsigned int value = 0x0000;
+ 232   1        
+ 233   1        value = TH2;
+ 234   1        value <<= 0x08;
+ 235   1        value |= TL2;
+ 236   1      
+ 237   1        return value; 
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 5   
+
+ 238   1      }
+ 239          
+ 240          
+ 241          void set_Timer_2_reload_compare(unsigned int value)
+ 242          {
+ 243   1        RCMP2L = (value & 0x00FF);
+ 244   1        RCMP2H = ((value & 0xFF00) >> 0x08);
+ 245   1      }
+ 246          
+ 247          
+ 248          unsigned int get_Timer_2_reload_compare(void)
+ 249          {
+ 250   1        register unsigned int value = 0x0000;
+ 251   1        
+ 252   1        value = RCMP2H;
+ 253   1        value <<= 0x08;
+ 254   1        value |= RCMP2L;
+ 255   1      
+ 256   1        return value; 
+ 257   1      }
+ 258          
+ 259          
+ 260          void set_Timer_3(unsigned int value)
+ 261          {
+ 262   1        RL3 = (value & 0x00FF);
+ 263   1        RH3 = ((value & 0xFF00) >> 0x08);
+ 264   1      }
+ 265          
+ 266          
+ 267          unsigned int get_Timer_3(void)
+ 268          {
+ 269   1        register unsigned int value = 0x0000;
+ 270   1        
+ 271   1        value = RH3;
+ 272   1        value <<= 0x08;
+ 273   1        value |= RL3;
+ 274   1      
+ 275   1        return value; 
+ 276   1      }
+ 277          
+ 278          
+ 279          void set_capture_0(unsigned int value)
+ 280          {
+ 281   1        C0L = (value & 0x00FF);
+ 282   1        C0H = ((value & 0xFF00) >> 0x08);
+ 283   1      }
+ 284          
+ 285          
+ 286          unsigned int get_capture_0(void)
+ 287          {
+ 288   1        register unsigned int value = 0x0000;
+ 289   1        
+ 290   1        value = C0H;
+ 291   1        value <<= 0x08;
+ 292   1        value |= C0L;
+ 293   1      
+ 294   1        return value; 
+ 295   1      }
+ 296          
+ 297          
+ 298          void set_capture_1(unsigned int value)
+ 299          {
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 6   
+
+ 300   1        C1L = (value & 0x00FF);
+ 301   1        C1H = ((value & 0xFF00) >> 0x08);
+ 302   1      }
+ 303          
+ 304          
+ 305          unsigned int get_capture_1(void)
+ 306          {
+ 307   1        register unsigned int value = 0x0000;
+ 308   1        
+ 309   1        value = C1H;
+ 310   1        value <<= 0x08;
+ 311   1        value |= C1L;
+ 312   1      
+ 313   1        return value; 
+ 314   1      }
+ 315          
+ 316          
+ 317          void set_capture_2(unsigned int value)
+ 318          {
+ 319   1        C2L = (value & 0x00FF);
+ 320   1        C2H = ((value & 0xFF00) >> 0x08);
+ 321   1      }
+ 322          
+ 323          
+ 324          unsigned int get_capture_2(void)
+ 325          {
+ 326   1        register unsigned int value = 0x0000;
+ 327   1        
+ 328   1        value = C2H;
+ 329   1        value <<= 0x08;
+ 330   1        value |= C2L;
+ 331   1      
+ 332   1        return value; 
+ 333   1      }
+ 334          
+ 335          
+ 336          void set_PWM_period_count(unsigned int value)
+ 337          {
+ 338   1        PWMPL = (value & 0x00FF);
+ 339   1        PWMPH = ((value & 0xFF00) >> 0x08);  
+ 340   1      }
+ 341          
+ 342          
+ 343          void set_PWM0(unsigned int value)
+ 344          {
+ 345   1        PWM0L = (value & 0x00FF);
+ 346   1        PWM0H = ((value & 0xFF00) >> 0x08);
+ 347   1        set_LOAD;
+ 348   1      }
+ 349          
+ 350          
+ 351          void set_PWM1(unsigned int value)
+ 352          {
+ 353   1        PWM1L = (value & 0x00FF);
+ 354   1        PWM1H = ((value & 0xFF00) >> 0x08);
+ 355   1        set_LOAD;
+ 356   1      }
+ 357          
+ 358          
+ 359          void set_PWM2(unsigned int value)
+ 360          {
+ 361   1        PWM2L = (value & 0x00FF);
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 7   
+
+ 362   1        PWM2H = ((value & 0xFF00) >> 0x08);
+ 363   1        set_LOAD;
+ 364   1      }
+ 365          
+ 366          
+ 367          void set_PWM3(unsigned int value)
+ 368          {
+ 369   1        PWM3L = (value & 0x00FF);
+ 370   1        PWM3H = ((value & 0xFF00) >> 0x08);
+ 371   1        set_LOAD;
+ 372   1      }
+ 373          
+ 374          
+ 375          void set_PWM4(unsigned int value)
+ 376          {
+ 377   1        set_SFRPAGE;
+ 378   1        PWM4L = (value & 0x00FF);
+ 379   1        PWM4H = ((value & 0xFF00) >> 0x08);
+ 380   1        clr_SFRPAGE;
+ 381   1        set_LOAD;
+ 382   1      }
+ 383          
+ 384          
+ 385          void set_PWM5(unsigned int value)
+ 386          {
+ 387   1        set_SFRPAGE;
+ 388   1        PWM5L = (value & 0x00FF);
+ 389   1        PWM5H = ((value & 0xFF00) >> 0x08);
+ 390   1        clr_SFRPAGE;
+ 391   1        set_LOAD;
+ 392   1      }
+ 393          
+ 394          
+ 395          void set_complementary_PWM_dead_time(unsigned int value)
+ 396          {
+ 397   1        unsigned char hb = 0;
+ 398   1        unsigned char lb = 0;
+ 399   1      
+ 400   1        lb = (value & 0x00FF);
+ 401   1        hb = ((value & 0x0100) >> 8);
+ 402   1        BIT_TMP = EA;
+ 403   1      
+ 404   1        EA = 0;
+ 405   1        TA_protection_disable();
+ 406   1        PDTEN &= 0xEF;
+ 407   1        PDTEN |= hb;
+ 408   1        PDTCNT = lb;
+ 409   1        EA = BIT_TMP; 
+ 410   1      }
+ 411          
+ 412          
+ 413          void setup_WDT(unsigned char WDT_time)
+ 414          {
+ 415   1        TA_protection_disable();
+ 416   1        WDCON |= WDT_time;            
+ 417   1        set_WDCLR;                          
+ 418   1        while((WDCON | ~SET_BIT6) == 0xFF);     
+ 419   1        set_EA;
+ 420   1        set_WDTR; 
+ 421   1      }
+ 422          
+ 423          
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 8   
+
+ 424          void setup_WKT(unsigned char status, unsigned char reload_value, unsigned char clk_prescalar)
+ 425          {
+ 426   1        WKCON = ((status << 3) | (clk_prescalar & 0x07));
+ 427   1        RWK = reload_value;      
+ 428   1      }
+ 429          
+ 430          
+ 431          unsigned int ADC_read(void)
+ 432          {
+ 433   1        register unsigned int value = 0x0000; 
+ 434   1        
+ 435   1        value = ADCRH;
+ 436   1        value <<= 0x04;
+ 437   1        value |= ADCRL;
+ 438   1        
+ 439   1        return value;
+ 440   1      }
+ 441          
+ 442          
+ 443          void set_ADC_comparator_value(unsigned int value)
+ 444          {
+ 445   1        ADCMPL = (value & 0x000F);
+ 446   1        ADCMPH = ((value & 0x0FF0) >> 0x04);
+ 447   1      }
+ 448          
+ 449          
+ 450          void enable_IAP_mode(void)
+ 451          {
+ 452   1          EA_Save_bit = EA;
+ 453   1          clr_EA;
+ 454   1          TA_protection_disable();
+ 455   1          CHPCON |= 0x01 ;
+ 456   1          TA_protection_disable();
+ 457   1          IAPUEN |= 0x01;
+ 458   1          EA = EA_Save_bit;
+ 459   1      }
+ 460          
+ 461          
+ 462          void disable_IAP_mode(void)
+ 463          {
+ 464   1          EA_Save_bit = EA;
+ 465   1          clr_EA;
+ 466   1          TA_protection_disable();
+ 467   1          IAPUEN &= ~0x01;
+ 468   1          TA_protection_disable();
+ 469   1          CHPCON &=~ 0x01;
+ 470   1          EA = EA_Save_bit;
+ 471   1      }
+ 472          
+ 473          
+ 474          void trigger_IAP(void)
+ 475          {
+ 476   1          EA_Save_bit = EA;
+ 477   1          clr_EA;
+ 478   1          TA_protection_disable();
+ 479   1          IAPTRG |= 0x01;
+ 480   1          EA = EA_Save_bit;
+ 481   1      }
+ 482          
+ 483          
+ 484          void write_data_byte(unsigned int address, unsigned char value)
+ 485          {
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 9   
+
+ 486   1        unsigned char looptmp = 0;
+ 487   1        unsigned char u8_addrl_r = 0;
+ 488   1        unsigned char code *cd_longaddr;
+ 489   1        unsigned char xdata *xd_tmp;
+ 490   1        
+ 491   1      
+ 492   1        u8_addrl_r = address;
+ 493   1        
+ 494   1        if(u8_addrl_r < 0x80)
+ 495   1        {
+ 496   2          u8_addrl_r = 0;
+ 497   2        }
+ 498   1        else 
+ 499   1        {
+ 500   2          u8_addrl_r = 0x80;
+ 501   2        }
+ 502   1      
+ 503   1        xd_tmp = 0x280;
+ 504   1        cd_longaddr = ((address & 0xff00) + u8_addrl_r);  
+ 505   1        
+ 506   1        while(xd_tmp !=0x300)
+ 507   1        {
+ 508   2          *xd_tmp = *cd_longaddr;
+ 509   2          looptmp++;
+ 510   2          xd_tmp++;
+ 511   2          cd_longaddr++;
+ 512   2        }
+ 513   1      
+ 514   1        u8_addrl_r = address;
+ 515   1        
+ 516   1        if (u8_addrl_r < 0x80)
+ 517   1        {
+ 518   2          xd_tmp = (u8_addrl_r + 0x280);
+ 519   2        }
+ 520   1        else
+ 521   1        {
+ 522   2          xd_tmp = (u8_addrl_r + 0x200);
+ 523   2        }
+ 524   1        
+ 525   1        *xd_tmp = value;
+ 526   1      
+ 527   1        IAPAL = address;
+ 528   1        IAPAH = (address >> 8);
+ 529   1        IAPFD = 0xFF;
+ 530   1        set_IAPEN; 
+ 531   1        set_APUEN;
+ 532   1        IAPCN = 0x22;     
+ 533   1        set_IAPGO; 
+ 534   1      
+ 535   1        u8_addrl_r = address;
+ 536   1        
+ 537   1        if (u8_addrl_r < 0x80)
+ 538   1        {
+ 539   2          u8_addrl_r = 0;
+ 540   2        }
+ 541   1        else
+ 542   1        {
+ 543   2          u8_addrl_r = 0x80;
+ 544   2        }
+ 545   1        
+ 546   1        xd_tmp = 0x280;
+ 547   1        IAPAL = u8_addrl_r;
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 10  
+
+ 548   1        IAPAH = (address >> 8);
+ 549   1        set_IAPEN; 
+ 550   1        set_APUEN;
+ 551   1        IAPCN = 0x21;
+ 552   1        
+ 553   1        while(xd_tmp !=0x2FF)
+ 554   1        {
+ 555   2          IAPFD = *xd_tmp;
+ 556   2          set_IAPGO;
+ 557   2          IAPAL++;
+ 558   2          xd_tmp++;
+ 559   2        }
+ 560   1        
+ 561   1        clr_APUEN;
+ 562   1        clr_IAPEN;
+ 563   1      } 
+ 564          
+ 565          
+ 566          unsigned char read_data_byte(unsigned int code *address)
+ 567          {
+ 568   1        unsigned char value = 0;
+ 569   1        
+ 570   1        value = (*address >> 8);
+ 571   1        
+ 572   1        return value;
+ 573   1      }
+ 574          
+ 575          /*  
+ 576          unsigned char write_data_to_one_page(unsigned int u16_addr, const unsigned char *pDat, unsigned char num)
+ 577          {
+ 578              unsigned char i = 0;
+ 579              unsigned char offset = 0;
+ 580              unsigned char __code *pCode;
+ 581              unsigned char __xdata *xd_tmp;
+ 582          
+ 583              enable_IAP_mode(); 
+ 584              offset = (u16_addr & 0x007F);
+ 585              i = (PAGE_SIZE - offset);
+ 586          
+ 587              if(num > i)
+ 588              {
+ 589                num = i;
+ 590              }
+ 591          
+ 592              pCode = (unsigned char __code *)u16_addr;
+ 593              
+ 594              for(i = 0; i < num; i++)
+ 595              {
+ 596                  if(pCode[i] != 0xFF)
+ 597                  {
+ 598                    break;
+ 599                  }
+ 600              }
+ 601          
+ 602              if(i == num)
+ 603              {
+ 604                  IAPCN = BYTE_PROGRAM_AP;
+ 605                  IAPAL = u16_addr;
+ 606                  IAPAH = u16_addr>>8;
+ 607          
+ 608                  for(i = 0; i < num; i++)
+ 609                  {
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 11  
+
+ 610                    IAPFD = pDat[i];
+ 611                    trigger_IAP();
+ 612                    IAPAL++;
+ 613                  }
+ 614          
+ 615                  for(i = 0; i < num; i++)
+ 616                  {
+ 617                    if(pCode[i] != pDat[i])
+ 618                    {
+ 619                             break; 
+ 620                    } 
+ 621                  }
+ 622          
+ 623                  if(i != num) 
+ 624                  {
+ 625                    goto WriteDataToPage20;
+ 626                  }
+ 627              }
+ 628          
+ 629              else
+ 630              {
+ 631                WriteDataToPage20:
+ 632                pCode = (unsigned char __code *)(u16_addr & 0xff80);
+ 633                for(i = 0; i < 128; i++)
+ 634                {
+ 635                     xd_tmp[i] = pCode[i];
+ 636                }
+ 637          
+ 638                for(i = 0; i < num; i++)
+ 639                {
+ 640                     xd_tmp[offset + i] = pDat[i];
+ 641                }
+ 642          
+ 643                do
+ 644                {
+ 645                     IAPAL = (u16_addr & 0xFF80);
+ 646                     IAPAH = (u16_addr >> 8);
+ 647                     IAPCN = PAGE_ERASE_AP;
+ 648                     IAPFD = 0xFF;  
+ 649                     trigger_IAP(); 
+ 650                     IAPCN =BYTE_PROGRAM_AP;
+ 651                     
+ 652                     for(i = 0; i < 128; i++)
+ 653                     {
+ 654                          IAPFD = xd_tmp[i];
+ 655                          trigger_IAP();
+ 656                          IAPAL++;
+ 657                     }
+ 658          
+ 659                     for(i = 0; i < 128; i++)
+ 660                     {
+ 661                          if(pCode[i] != xd_tmp[i])
+ 662                          {
+ 663                               break;
+ 664                          }
+ 665                     }
+ 666                }while(i != 128);
+ 667                
+ 668              }
+ 669          
+ 670              disable_IAP_mode();
+ 671          
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 12  
+
+ 672              return num;
+ 673          } 
+ 674          
+ 675          
+ 676          void write_data_flash(unsigned int u16_addr, unsigned char *pDat,unsigned int num)
+ 677          {
+ 678              unsigned int CPageAddr = 0;
+ 679              unsigned int EPageAddr = 0;
+ 680              unsigned int cnt = 0;
+ 681          
+ 682              CPageAddr = (u16_addr >> 7);
+ 683              EPageAddr = ((u16_addr + num) >> 7);
+ 684          
+ 685              while(CPageAddr != EPageAddr)
+ 686              {
+ 687                cnt = write_data_to_one_page(u16_addr, pDat, 128);
+ 688                u16_addr += cnt;
+ 689                pDat += cnt;
+ 690                num -= cnt;
+ 691                CPageAddr = (u16_addr >> 7);
+ 692              }
+ 693          
+ 694              if(num)
+ 695              {
+ 696                write_data_to_one_page(u16_addr, pDat,num);
+ 697              }
+ 698          }
+ 699          
+ 700          
+ 701          void read_data_flash(unsigned int u16_addr, unsigned char *pDat, unsigned int num)
+ 702          {
+ 703              unsigned int i = 0;
+ 704              
+ 705              for(i = 0; i < num; i++)
+ 706              {
+ 707                  pDat[i] = *(unsigned char __code *)(u16_addr+i);
+ 708              }
+ 709          }
+ 710          */
+ 711          
+ 712          
+ 713          void I2C_init(void)
+ 714          {
+ 715   1        I2C_GPIO_Init(regular_I2C_pins);
+ 716   1        I2CLK = I2C_CLOCK; 
+ 717   1        set_I2CEN; 
+ 718   1      }
+ 719          
+ 720          
+ 721          void I2C_start(void)
+ 722          {
+ 723   1        signed int t = timeout_count;
+ 724   1        
+ 725   1        set_STA;                                
+ 726   1        clr_SI;
+ 727   1        while((SI == 0) && (t > 0))
+ 728   1        {
+ 729   2          t--;
+ 730   2        };     
+ 731   1      }
+ 732          
+ 733          void I2C_stop(void)
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 13  
+
+ 734          {
+ 735   1        signed int t = timeout_count;
+ 736   1        
+ 737   1        clr_SI;
+ 738   1        set_STO;
+ 739   1        while((STO == 1) && (t > 0))
+ 740   1        {
+ 741   2          t--;
+ 742   2        };     
+ 743   1      }
+ 744          
+ 745          
+ 746          unsigned char I2C_read(unsigned char ack_mode)
+ 747          {
+ 748   1        signed int t = timeout_count;
+ 749   1        unsigned char value = 0x00;
+ 750   1      
+ 751   1        set_AA;                             
+ 752   1        clr_SI;
+ 753   1        while((SI == 0) && (t > 0))
+ 754   1        {
+ 755   2          t--;
+ 756   2        };    
+ 757   1        
+ 758   1        value = I2DAT;
+ 759   1      
+ 760   1        if(ack_mode == I2C_NACK)
+ 761   1        {
+ 762   2          t = timeout_count;
+ 763   2          clr_AA;   
+ 764   2          clr_SI;
+ 765   2          while((SI == 0) && (t > 0))
+ 766   2          {
+ 767   3            t--;
+ 768   3          };      
+ 769   2        }
+ 770   1        
+ 771   1        return value;
+ 772   1      }
+ 773          
+ 774          
+ 775          void I2C_write(unsigned char value)
+ 776          {
+ 777   1        signed int t = timeout_count;
+ 778   1        
+ 779   1        I2DAT = value; 
+ 780   1        clr_STA;           
+ 781   1        clr_SI;
+ 782   1        while((SI == 0) && (t > 0))
+ 783   1        {
+ 784   2          t--;
+ 785   2        };  
+ 786   1      }
+ 787          
+ 788          
+ 789          void SPI_init(unsigned char clk_speed, unsigned char mode)
+ 790          {
+ 791   1        set_SPI_clock_rate(clk_speed);
+ 792   1        set_SPI_mode(mode);
+ 793   1        set_DISMODF;
+ 794   1        set_MSTR;
+ 795   1        set_SPIEN;
+C51 COMPILER V9.60.0.0   EXTENDED_FUNCTIONS                                                10/22/2021 20:52:28 PAGE 14  
+
+ 796   1      }
+ 797          
+ 798          
+ 799          unsigned char SPI_transfer(unsigned char write_value)
+ 800          {
+ 801   1        signed int t = timeout_count;
+ 802   1        register unsigned char read_value = 0x00; 
+ 803   1      
+ 804   1        SPDR = write_value;
+ 805   1        while((!(SPSR & SET_BIT7)) && (t > 0))
+ 806   1        {
+ 807   2          t--;
+ 808   2        };         
+ 809   1        read_value = SPDR;
+ 810   1        clr_SPIF;    
+ 811   1      
+ 812   1        return read_value;
+ 813   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1663    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1      24
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
